@@ -1,4 +1,3 @@
-//make it so it doesnt form a big ass line
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -16,6 +15,8 @@
 #define player 'p'
 #define obstacle 'o'
 #define reward 'r'
+//speed increase (value by phase)
+const int spdinc[] = {1,0,0,1,0,1};
 
 void Map(int yaxis, int xaxis, char m[yaxis][xaxis], int p[2], int o[ob][2], int re[2]) {
 	printf("\n");
@@ -51,21 +52,26 @@ int RDD(int a, int b) {
 int main() {
 	int r[2];
 	int g = 2;
+	int speed = 0;
+	int df;
+	do {
+		printf("Choose the game's difficulty(0/1/2): ");
+		scanf("%d",&df);
+	} while(df<0&&df>2);
 	//enemies amount
 	int ea = 2,f = 0;
 	srand(time(NULL));
 	while(ea<=ob&&g==2)
 	{
-        int axisx = x+f*mapinc, axisy = y+f*mapinc;
+		int axisx = x+f*mapinc, axisy = y+f*mapinc;
 		char map[axisy][axisx];
 		int pos[2] = {RDD(axisy, 2), RDD(axisx, 2)};
 		int opps[ob][2];
 		char dir = 'x';
 		int i = 0;
-		int speed = 1;
 		f++;
 		printf("\nStage %d",f);
-		speed += (f==4||f==6) ? 1 : 0;
+		speed += (df < 2&&f>1) ? 0 : spdinc[f-1];
 		do {
 			r[1] = rand() % (axisx-1);
 			r[0] = rand() % (axisy-1);
@@ -111,36 +117,51 @@ int main() {
 			//enemy move
 			for(i = 0; i < ea; i++)
 			{
-			    int it = 0;
-				// printf("\n enemy %d position:(%d, %d)",i+1,opps[i][1],opps[i][0]);
-				//right+1
-				for(it = 0; (it<speed)&&(pos[1] - it > opps[i][1]); it++);
-				// printf("\nr:%d",it);
-				if (it == 0) 
+				int it = 0;
+				if(df==0)
 				{
-				    //left-1
-				    for(it; (it>-speed)&&(pos[1] + it < opps[i][1]); it--);
-				    // printf("\nl:%d",it);
+					// printf("\n enemy %d position:(%d, %d)",i+1,opps[i][1],opps[i][0]);
+					//right+1
+					for(it = 0; (it<speed)&&(pos[1] - it > opps[i][1]); it++);
+					// printf("\nr:%d",it);
+					if (it == 0)
+					{
+						//left-1
+						for(it; (it>-speed)&&(pos[1] + it < opps[i][1]); it--);
+						// printf("\nl:%d",it);
+					}
+					opps[i][1] += it;
+					if(it==0)
+					{
+						//up+1
+						for(it; (it<speed)&&(pos[0] - it > opps[i][0]); it++);
+						//   printf("\nu:%d",it);
+						if(it == 0)
+						{
+							//down-1
+							for(it; (it>-speed)&&(pos[0] + it < opps[i][0]); it--);
+							//   printf("\nd:%d",it);
+						}
+						opps[i][0] += it;
+					}
 				}
-			    opps[i][1] += it;
-			    if(it==0)
-			    {
-			        //up+1
-			        for(it; (it<speed)&&(pos[0] - it > opps[i][0]); it++);
-			     //   printf("\nu:%d",it);
-	    			if(it == 0)
-	    			{
-	    			    //down-1
-	    			    for(it; (it>-speed)&&(pos[0] + it < opps[i][0]); it--);
-			         //   printf("\nd:%d",it);
-	    			}
-			        opps[i][0] += it;
-			    }
-				
+				else
+				{
+					int dih = rand() % 2;
+					it = pos[dih] - opps[i][dih];
+					if(it==0)
+					{
+						dih = 1 - dih;
+						it = pos[dih] - opps[i][dih];
+					}
+					it = it > speed ? speed : it;
+					it = it < -speed ? -speed : it;
+					opps[i][dih] += it;
+				}
 				opps[i][1] = opps[i][1] < 0 ? axisx-1 : opps[i][1];
-		    	opps[i][0] = opps[i][0] < 0 ? axisy-1 : opps[i][0];
-			    opps[i][1] = opps[i][1] >= axisx ? 0 : opps[i][1];
-    			opps[i][0] = opps[i][0] >= axisy ? 0 : opps[i][0];
+				opps[i][0] = opps[i][0] < 0 ? axisy-1 : opps[i][0];
+				opps[i][1] = opps[i][1] >= axisx ? 0 : opps[i][1];
+				opps[i][0] = opps[i][0] >= axisy ? 0 : opps[i][0];
 				// printf("\n enemy %d position:(%d, %d)",i+1,opps[i][1],opps[i][0]);
 			}
 			g = (dir == '0') ? 0 : CheckPos(pos, opps,r);
@@ -148,7 +169,7 @@ int main() {
 		printf("\nCurrent Position: (%d, %d)\n", pos[1]+1, pos[0]+1);
 		printf("Reward Position: (%d, %d)\n", r[1]+1,r[0]+1);
 		Map(axisy, axisx,map, pos, opps, r);
-		printf(g == 0 ? "\n" : "You Win\n");
+		printf(g == 0 ? "\n" : "Stage Completed\n");
 		ea+= xe;
 	}
 	printf(g == 2 ? "You Win" : "Game Over");
